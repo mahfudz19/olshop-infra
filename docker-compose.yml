@@ -1,0 +1,98 @@
+services:
+  tokopedia-scraper:
+    container_name: tokopedia-scraper
+    build:
+      context: ../tokopedia-scraper
+      dockerfile: Dockerfile
+    ports:
+      - "${SCRAPER_PORT:-8000}:8000"
+      - "${SCRAPER_VNC_PORT:-6080}:6080"
+    environment:
+      - MONGODB_URI=${SCRAPER_MONGODB_URI}
+    volumes:
+      - shopee_profile_uc:/app/profile_uc
+    shm_size: ${SCRAPER_SHM_SIZE:-2gb}
+    networks:
+      - olshop-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  shop-api:
+    container_name: shop-api
+    build:
+      context: ../shop-api
+      dockerfile: Dockerfile
+    ports:
+      - "${API_PORT:-8080}:8080"
+    environment:
+      - GIN_MODE=${API_GIN_MODE:-release}
+      - PORT=${API_PORT:-8080}
+      - MONGODB_URI=${API_MONGODB_URI}
+      - MONGODB_NAME=${API_MONGODB_NAME}
+      - RATE_LIMIT_PER_MINUTE=${API_RATE_LIMIT_PER_MINUTE:-100}
+      - APP_ENV=${API_APP_ENV:-development}
+      - ALLOWED_ORIGINS=${API_ALLOWED_ORIGINS}
+      - COOKIE_DOMAIN=${API_COOKIE_DOMAIN}
+      - JWT_SECRET=${API_JWT_SECRET}
+      - MONGODB_TEST_URI=${API_MONGODB_TEST_URI}
+      - MONGODB_TEST_NAME=${API_MONGODB_TEST_NAME}
+      - AWS_BUCKET_NAME=${API_AWS_BUCKET_NAME}
+      - AWS_BUCKET_REGION=${API_AWS_BUCKET_REGION}
+      - AWS_ACCESS_KEY=${API_AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${API_AWS_SECRET_KEY}
+      - ELASTICSEARCH_ENABLED=${API_ELASTICSEARCH_ENABLED:-true}
+      - ELASTICSEARCH_URL=${API_ELASTICSEARCH_URL}
+      - ELASTICSEARCH_API_KEY=${API_ELASTICSEARCH_API_KEY}
+      - ELASTICSEARCH_INDEX=${API_ELASTICSEARCH_INDEX}
+    networks:
+      - olshop-network
+    restart: unless-stopped
+    depends_on:
+      tokopedia-scraper:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  shop-frontend:
+    container_name: shop-frontend
+    build:
+      context: ../shop-frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_APP_NAME=${FRONTEND_NEXT_PUBLIC_APP_NAME}
+        - NEXT_IMAGES_HOSTNAME=${FRONTEND_NEXT_IMAGES_HOSTNAME}
+        - NEXT_PUBLIC_SHOW_QUICK_LOGIN=${FRONTEND_NEXT_PUBLIC_SHOW_QUICK_LOGIN}
+        - INTERNAL_API_URL=${FRONTEND_INTERNAL_API_URL}
+        - NEXT_PUBLIC_SCRAPER_API_URL=${FRONTEND_NEXT_PUBLIC_SCRAPER_API_URL}
+        - NEXT_PUBLIC_VNC_HOST=${FRONTEND_NEXT_PUBLIC_VNC_HOST}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - INTERNAL_API_URL=${FRONTEND_INTERNAL_API_URL}
+      - NEXT_PUBLIC_SCRAPER_API_URL=${FRONTEND_NEXT_PUBLIC_SCRAPER_API_URL}
+      - NEXT_PUBLIC_VNC_HOST=${FRONTEND_NEXT_PUBLIC_VNC_HOST}
+    networks:
+      - olshop-network
+    restart: unless-stopped
+    depends_on:
+      shop-api:
+        condition: service_healthy
+      tokopedia-scraper:
+        condition: service_healthy
+
+volumes:
+  shopee_profile_uc:
+    driver: local
+
+networks:
+  olshop-network:
+    driver: bridge

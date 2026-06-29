@@ -1,0 +1,18 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Project subfolders (cloned manually via Makefile)
+shop-api/
+shop-frontend/
+tokopedia-scraper/
+
+# Logs
+*.log
+logs/
+
+# OS / Editor
+.DS_Store
+.idea/
+.vscode/
