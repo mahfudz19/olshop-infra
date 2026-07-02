@@ -2,7 +2,7 @@ services:
   tokopedia-scraper:
     container_name: tokopedia-scraper
     build:
-      context: ../tokopedia-scraper
+      context: tokopedia-scraper
       dockerfile: Dockerfile
     ports:
       - "${SCRAPER_PORT:-8000}:8000"
@@ -19,13 +19,13 @@ services:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 60s
+      retries: 10
+      start_period: 300s
 
   shop-api:
     container_name: shop-api
     build:
-      context: ../shop-api
+      context: shop-api
       dockerfile: Dockerfile
     ports:
       - "${API_PORT:-8080}:8080"
@@ -59,13 +59,13 @@ services:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 30s
+      retries: 10
+      start_period: 300s
 
   shop-frontend:
     container_name: shop-frontend
     build:
-      context: ../shop-frontend
+      context: shop-frontend
       dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_APP_NAME=${FRONTEND_NEXT_PUBLIC_APP_NAME}
