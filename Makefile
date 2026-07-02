@@ -23,6 +23,17 @@ pull: ## Pull update terbaru dari semua repository
 		fi \
 	done
 
+open-vscode: ## Open semua repository di VS Code
+	@echo "Opening repositories in VS Code..."
+	@for dir in shop-api shop-frontend tokopedia-scraper; do \
+		if [ -d "$$dir/.git" ]; then \
+			echo "Opening $$dir..."; \
+			cd $$dir && code . && cd ..; \
+		else \
+			echo "[!] $$dir bukan repository git, lewati."; \
+		fi \
+	done
+
 build: ## Build semua image docker
 	docker compose build
 
